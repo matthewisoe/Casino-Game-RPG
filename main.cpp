@@ -23,7 +23,10 @@ void showDisclaimerWindow(TTF_Font* font) {
     }
 
     // Load the icon image to be used as the window icon
-    SDL_Surface* windowIcon = IMG_Load("C:/Users/GOH/CLionProjects/untitled/assets/PNG/button/warning.png"); // Specify path to icon image
+    std::string pathWarning = std::string(SDL_GetBasePath()) + "assets/PNG/button/warning.png";
+    char arrWarning[pathWarning.length()];
+    strcpy(arrWarning, pathWarning.c_str());
+    SDL_Surface* windowIcon = IMG_Load(arrWarning); // Specify path to icon image
     if (!windowIcon) {
         std::cerr << "Unable to load icon: " << IMG_GetError() << std::endl;
     } else {
@@ -169,9 +172,14 @@ int main(int argc, char* args[]) {
         SDL_Quit();
         return 1;
     }
-
-    Mix_Music* bgMusic = Mix_LoadMUS("C:/Users/GOH/CLionProjects/untitled/assets/sounds/bgm.mp3");
-    Mix_Chunk* typingSound = Mix_LoadWAV("C:/Users/GOH/CLionProjects/untitled/assets/sounds/click.wav");
+    std::string pathBgMusic = std::string(SDL_GetBasePath()) + "assets/sounds/bgm.mp3";
+    char arrBgMusic[pathBgMusic.length()];
+    strcpy(arrBgMusic, pathBgMusic.c_str());
+    Mix_Music* bgMusic = Mix_LoadMUS(arrBgMusic);
+    std::string pathTypingSound = std::string(SDL_GetBasePath()) + "assets/sounds/click.wav";
+    char arrTypingSound[pathTypingSound.length()];
+    strcpy(arrTypingSound, pathTypingSound.c_str());
+    Mix_Chunk* typingSound = Mix_LoadWAV(arrTypingSound);
     if (!bgMusic || !typingSound) {
         std::cerr << "Failed to load audio files! SDL_mixer Error: " << Mix_GetError() << std::endl;
         Mix_FreeMusic(bgMusic);
@@ -185,7 +193,10 @@ int main(int argc, char* args[]) {
     Mix_VolumeChunk(typingSound, 128);
     Mix_PlayMusic(bgMusic, -1);
 
-    TTF_Font* font = TTF_OpenFont("C:/Users/GOH/CLionProjects/untitled/assets/font/OpenSans-Italic-VariableFont_wdth,wght.ttf", 24);
+    std::string pathFont = std::string(SDL_GetBasePath()) + "assets/font/OpenSans-Italic-VariableFont_wdth,wght.ttf";
+    char arrFont[pathFont.length()];
+    strcpy(arrFont, pathFont.c_str());
+    TTF_Font* font = TTF_OpenFont(arrFont, 24);
     if (!font) {
         std::cerr << "Failed to load font! SDL_ttf Error: " << TTF_GetError() << std::endl;
         Mix_FreeChunk(typingSound);
@@ -214,16 +225,29 @@ int main(int argc, char* args[]) {
         return 1;
     }
 
-    SDL_Surface* bgSurface = IMG_Load("C:/Users/GOH/CLionProjects/untitled/assets/PNG/Background/bg3.png");
+    std::string pathBg = std::string(SDL_GetBasePath()) + "assets/PNG/Background/bg3.png";
+    char arrBg[pathBg.length()];
+    strcpy(arrBg, pathBg.c_str());
+    SDL_Surface* bgSurface = IMG_Load(arrBg);
     SDL_Texture* bgTexture = SDL_CreateTextureFromSurface(renderer, bgSurface);
     SDL_FreeSurface(bgSurface);
 
-    SDL_Surface* logoSurface = IMG_Load("C:/Users/GOH/CLionProjects/untitled/assets/PNG/Logo/logo.png");
+    std::string pathLogo = std::string(SDL_GetBasePath()) + "assets/PNG/Logo/logo.png";
+    char arrLogo[pathLogo.length()];
+    strcpy(arrLogo, pathLogo.c_str());
+    SDL_Surface* logoSurface = IMG_Load(arrLogo);
     SDL_Texture* logoTexture = SDL_CreateTextureFromSurface(renderer, logoSurface);
     SDL_FreeSurface(logoSurface);
 
-    SDL_Surface* muteSurface = IMG_Load("C:/Users/GOH/CLionProjects/untitled/assets/PNG/Button/mute.png");
-    SDL_Surface* unmuteSurface = IMG_Load("C:/Users/GOH/CLionProjects/untitled/assets/PNG/Button/unmute.png");
+    std::string pathMute = std::string(SDL_GetBasePath()) + "assets/PNG/button/mute.png";
+    char arrMute[pathMute.length()];
+    strcpy(arrMute, pathMute.c_str());
+    SDL_Surface* muteSurface = IMG_Load(arrMute);
+
+    std::string pathUnmute = std::string(SDL_GetBasePath()) + "assets/PNG/button/unmute.png";
+    char arrUnmute[pathMute.length()];
+    strcpy(arrUnmute, pathUnmute.c_str());
+    SDL_Surface* unmuteSurface = IMG_Load(arrUnmute);
     SDL_Texture* muteTexture = SDL_CreateTextureFromSurface(renderer, muteSurface);
     SDL_Texture* unmuteTexture = SDL_CreateTextureFromSurface(renderer, unmuteSurface);
     SDL_FreeSurface(muteSurface);
