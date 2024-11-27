@@ -75,50 +75,319 @@ void showDisclaimerWindow(TTF_Font* font) {
     SDL_DestroyWindow(disclaimerWindow);
 }
 void showAboutWindow(TTF_Font* font) {
-    SDL_Window* aboutWindow = SDL_CreateWindow("About", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 600, 400, SDL_WINDOW_SHOWN);
+    const int aboutWindowWidth = 600;
+    const int aboutWindowHeight = 400;
+
+    SDL_Window* aboutWindow = SDL_CreateWindow(
+        "About", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        aboutWindowWidth, aboutWindowHeight, SDL_WINDOW_SHOWN
+    );
+
     if (!aboutWindow) {
         std::cerr << "Unable to create About window: " << SDL_GetError() << std::endl;
         return;
     }
+
     SDL_Renderer* aboutRenderer = SDL_CreateRenderer(aboutWindow, -1, SDL_RENDERER_ACCELERATED);
     if (!aboutRenderer) {
         SDL_DestroyWindow(aboutWindow);
         std::cerr << "Unable to create renderer for About window: " << SDL_GetError() << std::endl;
         return;
     }
+
+    std::string aboutText =
+        "Welcome to Casino Game!\n\n"
+        "This is a fun and interactive simulated casino experience designed for entertainment purposes only. "
+        "Immerse yourself in a vibrant virtual casino where you can explore various games, learn the rules, and enjoy the thrill of chance – all without any real-world risk.\n\n"
+        "Key Features:\n"
+        "- A beautiful and user-friendly interface designed to make your gameplay enjoyable.\n"
+        "- Built-in background music and sound effects for an immersive experience.\n"
+        "- Clear, beginner-friendly instructions for a seamless introduction to casino games.\n"
+        "- Responsible gaming emphasis: This is a simulation and not a real gambling platform.\n\n"
+        "Disclaimer:\n"
+        "This game is intended for entertainment purposes only. It does not involve real money or any form of betting. "
+        "Please play responsibly and keep it fun!";
+
+    SDL_Color textColor = {0, 0, 0};  // Black color
+    SDL_Surface* aboutSurface = TTF_RenderText_Blended_Wrapped(font, aboutText.c_str(), textColor, aboutWindowWidth - 50);
+    SDL_Texture* aboutTexture = SDL_CreateTextureFromSurface(aboutRenderer, aboutSurface);
+    int textHeight = aboutSurface->h;  // Full height of the rendered text
+    SDL_FreeSurface(aboutSurface);
+
+    int scrollOffset = 0;  // Vertical scroll offset
+    const int scrollStep = 20;  // Amount to scroll per wheel or key press
+    const int maxScrollOffset = textHeight - aboutWindowHeight + 50;  // Maximum scroll limit
+
+    SDL_Rect textRect = {25, 25 - scrollOffset, aboutWindowWidth - 50, textHeight};
+
     bool quitAbout = false;
     SDL_Event event;
-    std::string gameIntro = "Welcome to the Casino Game!";
-    std::string gameRules = "Rules:\n1. Rule 1: Description\n2. Rule 2: Description\n3. Rule 3: Description\n...";
-    SDL_Color textColor = {0, 0, 0};
-    SDL_Surface* introSurface = TTF_RenderText_Blended_Wrapped(font, gameIntro.c_str(), textColor, 500);
-    SDL_Texture* introTexture = SDL_CreateTextureFromSurface(aboutRenderer, introSurface);
-    SDL_Rect introRect = {50, 50, introSurface->w, introSurface->h};
-    SDL_FreeSurface(introSurface);
-    SDL_Surface* rulesSurface = TTF_RenderText_Blended_Wrapped(font, gameRules.c_str(), textColor, 500);
-    SDL_Texture* rulesTexture = SDL_CreateTextureFromSurface(aboutRenderer, rulesSurface);
-    SDL_Rect rulesRect = {50, 150, rulesSurface->w, rulesSurface->h};
-    SDL_FreeSurface(rulesSurface);
+
     while (!quitAbout) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE) {
                 quitAbout = true;
             }
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-                quitAbout = true;
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_DOWN) {
+                    scrollOffset += scrollStep;
+                    if (scrollOffset > maxScrollOffset) scrollOffset = maxScrollOffset;
+                } else if (event.key.keysym.sym == SDLK_UP) {
+                    scrollOffset -= scrollStep;
+                    if (scrollOffset < 0) scrollOffset = 0;
+                } else if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    quitAbout = true;
+                }
+            }
+            if (event.type == SDL_MOUSEWHEEL) {
+                if (event.wheel.y > 0) {  // Scroll up
+                    scrollOffset -= scrollStep;
+                    if (scrollOffset < 0) scrollOffset = 0;
+                } else if (event.wheel.y < 0) {  // Scroll down
+                    scrollOffset += scrollStep;
+                    if (scrollOffset > maxScrollOffset) scrollOffset = maxScrollOffset;
+                }
             }
         }
-        SDL_SetRenderDrawColor(aboutRenderer, 255, 255, 255, 255);
+
+        textRect.y = 25 - scrollOffset;  // Update text position based on scroll
+
+        SDL_SetRenderDrawColor(aboutRenderer, 255, 255, 255, 255);  // White background
         SDL_RenderClear(aboutRenderer);
-        SDL_RenderCopy(aboutRenderer, introTexture, nullptr, &introRect);
-        SDL_RenderCopy(aboutRenderer, rulesTexture, nullptr, &rulesRect);
+
+        SDL_RenderCopy(aboutRenderer, aboutTexture, nullptr, &textRect);
+
         SDL_RenderPresent(aboutRenderer);
     }
-    SDL_DestroyTexture(introTexture);
-    SDL_DestroyTexture(rulesTexture);
+
+    SDL_DestroyTexture(aboutTexture);
     SDL_DestroyRenderer(aboutRenderer);
     SDL_DestroyWindow(aboutWindow);
 }
+// Function to draw a thicker border around a rectangle
+void drawThickerBorder(SDL_Renderer* renderer, SDL_Rect rect, int thickness) {
+    for (int i = 0; i < thickness; ++i) {
+        SDL_Rect borderRect = { rect.x - i, rect.y - i, rect.w + 2*i, rect.h + 2*i };
+        SDL_RenderDrawRect(renderer, &borderRect);
+    }
+}
+
+void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
+                             SDL_Texture* bgTexture, SDL_Texture* backButtonTexture,
+                             SDL_Texture* muteTexture, SDL_Texture* unmuteTexture, bool& isMuted) {
+    // Load character images
+    SDL_Surface* char1Surface = IMG_Load("assets/PNG/Characters/character1/frame1.png");
+    SDL_Surface* char2Surface = IMG_Load("assets/PNG/Characters/character2/frame2.png");
+    SDL_Surface* char3Surface = IMG_Load("assets/PNG/Characters/character3/frame3.png");
+
+    if (!char1Surface || !char2Surface || !char3Surface) {
+        std::cerr << "Failed to load character images: " << IMG_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture* char1Texture = SDL_CreateTextureFromSurface(renderer, char1Surface);
+    SDL_Texture* char2Texture = SDL_CreateTextureFromSurface(renderer, char2Surface);
+    SDL_Texture* char3Texture = SDL_CreateTextureFromSurface(renderer, char3Surface);
+
+    SDL_FreeSurface(char1Surface);
+    SDL_FreeSurface(char2Surface);
+    SDL_FreeSurface(char3Surface);
+
+    // Enable blending for transparency
+    SDL_SetTextureBlendMode(char1Texture, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureBlendMode(char2Texture, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureBlendMode(char3Texture, SDL_BLENDMODE_BLEND);
+
+    // Rectangles for character positions
+    SDL_Rect char1Rect = {100, 200, 150, 200};
+    SDL_Rect char2Rect = {325, 200, 150, 200};
+    SDL_Rect char3Rect = {550, 200, 150, 200};
+
+    SDL_Rect backButtonRect = {20, WINDOW_HEIGHT - 70, 50, 50};
+    SDL_Rect muteButtonRect = {WINDOW_WIDTH - 60, WINDOW_HEIGHT - 60, 50, 50};
+
+    // Create the text "Choose your own character"
+    SDL_Color textColor = {0, 0, 0}; // Black color
+    SDL_Surface* titleSurface = TTF_RenderText_Solid(font, "Choose your own character", textColor);
+    SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(renderer, titleSurface);
+    int titleWidth = titleSurface->w;
+    int titleHeight = titleSurface->h;
+    SDL_Rect titleRect = {(WINDOW_WIDTH - titleWidth) / 2, 100, titleWidth, titleHeight}; // Centered at the top
+    SDL_FreeSurface(titleSurface);
+
+    // Character names
+    const char* char1Name = "Adam";
+    const char* char2Name = "Bernard";
+    const char* char3Name = "Charlie";
+
+    bool quitGameSelection = false;
+    SDL_Event event;
+    int selectedCharacter = -1; // -1 means no character selected
+
+    // Create the text for character names
+    SDL_Surface* nameSurface1 = TTF_RenderText_Solid(font, char1Name, textColor);
+    SDL_Texture* nameTexture1 = SDL_CreateTextureFromSurface(renderer, nameSurface1);
+    int nameWidth1 = nameSurface1->w;
+    int nameHeight1 = nameSurface1->h;
+    SDL_Rect nameRect1 = {char1Rect.x + (char1Rect.w - nameWidth1) / 2, char1Rect.y + char1Rect.h + 5, nameWidth1, nameHeight1};
+    SDL_FreeSurface(nameSurface1);
+
+    SDL_Surface* nameSurface2 = TTF_RenderText_Solid(font, char2Name, textColor);
+    SDL_Texture* nameTexture2 = SDL_CreateTextureFromSurface(renderer, nameSurface2);
+    int nameWidth2 = nameSurface2->w;
+    int nameHeight2 = nameSurface2->h;
+    SDL_Rect nameRect2 = {char2Rect.x + (char2Rect.w - nameWidth2) / 2, char2Rect.y + char2Rect.h + 5, nameWidth2, nameHeight2};
+    SDL_FreeSurface(nameSurface2);
+
+    SDL_Surface* nameSurface3 = TTF_RenderText_Solid(font, char3Name, textColor);
+    SDL_Texture* nameTexture3 = SDL_CreateTextureFromSurface(renderer, nameSurface3);
+    int nameWidth3 = nameSurface3->w;
+    int nameHeight3 = nameSurface3->h;
+    SDL_Rect nameRect3 = {char3Rect.x + (char3Rect.w - nameWidth3) / 2, char3Rect.y + char3Rect.h + 5, nameWidth3, nameHeight3};
+    SDL_FreeSurface(nameSurface3);
+
+    while (!quitGameSelection) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                quitGameSelection = true;
+                SDL_Quit();
+                exit(0);
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int mouseX, mouseY;
+                SDL_GetMouseState(&mouseX, &mouseY);
+
+                // Check if back button is clicked
+                if (mouseX >= backButtonRect.x && mouseX <= backButtonRect.x + backButtonRect.w &&
+                    mouseY >= backButtonRect.y && mouseY <= backButtonRect.y + backButtonRect.h) {
+                    quitGameSelection = true;  // Back to the previous screen
+                }
+
+                // Check if mute button is clicked
+                if (mouseX >= muteButtonRect.x && mouseX <= muteButtonRect.x + muteButtonRect.w &&
+                    mouseY >= muteButtonRect.y && mouseY <= muteButtonRect.y + muteButtonRect.h) {
+                    isMuted = !isMuted;
+                    if (isMuted) Mix_PauseMusic();
+                    else Mix_ResumeMusic();
+                }
+
+                // Check if a character is clicked
+                if (mouseX >= char1Rect.x && mouseX <= char1Rect.x + char1Rect.w &&
+                    mouseY >= char1Rect.y && mouseY <= char1Rect.y + char1Rect.h) {
+                    selectedCharacter = 1;  // Character 1 selected
+                }
+                else if (mouseX >= char2Rect.x && mouseX <= char2Rect.x + char2Rect.w &&
+                         mouseY >= char2Rect.y && mouseY <= char2Rect.y + char2Rect.h) {
+                    selectedCharacter = 2;  // Character 2 selected
+                }
+                else if (mouseX >= char3Rect.x && mouseX <= char3Rect.x + char3Rect.w &&
+                         mouseY >= char3Rect.y && mouseY <= char3Rect.y + char3Rect.h) {
+                    selectedCharacter = 3;  // Character 3 selected
+                }
+            }
+        }
+
+        SDL_RenderClear(renderer);
+
+        // Render a white background
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderClear(renderer);
+
+        // Render the title
+        SDL_RenderCopy(renderer, titleTexture, nullptr, &titleRect);
+
+        // Render characters with transparency
+        SDL_RenderCopy(renderer, char1Texture, nullptr, &char1Rect);
+        SDL_RenderCopy(renderer, char2Texture, nullptr, &char2Rect);
+        SDL_RenderCopy(renderer, char3Texture, nullptr, &char3Rect);
+
+        // Highlight the selected character (with a thicker red border)
+        if (selectedCharacter == 1) {
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
+            drawThickerBorder(renderer, char1Rect, 4);  // Thicker border (4px)
+            SDL_RenderCopy(renderer, nameTexture1, nullptr, &nameRect1);  // Render "Adam"
+        }
+        else if (selectedCharacter == 2) {
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
+            drawThickerBorder(renderer, char2Rect, 4);  // Thicker border (4px)
+            SDL_RenderCopy(renderer, nameTexture2, nullptr, &nameRect2);  // Render "Bernard"
+        }
+        else if (selectedCharacter == 3) {
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
+            drawThickerBorder(renderer, char3Rect, 4);  // Thicker border (4px)
+            SDL_RenderCopy(renderer, nameTexture3, nullptr, &nameRect3);  // Render "Charlie"
+        }
+
+        // Render back and mute/unmute buttons
+        SDL_RenderCopy(renderer, backButtonTexture, nullptr, &backButtonRect);
+        SDL_RenderCopy(renderer, isMuted ? muteTexture : unmuteTexture, nullptr, &muteButtonRect);
+
+        SDL_RenderPresent(renderer);
+    }
+
+    // Cleanup
+    SDL_DestroyTexture(char1Texture);
+    SDL_DestroyTexture(char2Texture);
+    SDL_DestroyTexture(char3Texture);
+    SDL_DestroyTexture(titleTexture);
+    SDL_DestroyTexture(nameTexture1);
+    SDL_DestroyTexture(nameTexture2);
+    SDL_DestroyTexture(nameTexture3);
+}
+
+void fadeUpText(SDL_Renderer* renderer, TTF_Font* font, const std::string& playerName) {
+    // Prepare the greeting message
+    std::string message = "Hi, " + playerName + "!";
+    SDL_Color textColor = {255, 255, 255, 255};  // White color
+
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, message.c_str(), textColor);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    int textWidth = textSurface->w;
+    int textHeight = textSurface->h;
+    SDL_FreeSurface(textSurface);
+
+    SDL_Rect textRect = {(WINDOW_WIDTH - textWidth) / 2, WINDOW_HEIGHT / 2, textWidth, textHeight};
+
+    // Animation parameters
+    int startY = textRect.y;
+    int targetY = textRect.y - 100;  // Move up by 100 pixels
+    int alpha = 255;                // Start with full opacity
+    int fadeSpeed = 5;              // Pixels per frame for vertical movement
+    int fadeStep = 5;               // Decrease opacity per frame
+
+    SDL_SetTextureBlendMode(textTexture, SDL_BLENDMODE_BLEND);
+
+    while (alpha > 0) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                SDL_DestroyTexture(textTexture);
+                SDL_Quit();
+                exit(0);
+            }
+        }
+
+        // Clear the screen
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);  // Black background
+        SDL_RenderClear(renderer);
+
+        // Render the fading text
+        textRect.y = startY - fadeSpeed * (255 - alpha) / fadeStep;  // Adjust position based on alpha
+        if (textRect.y < targetY) textRect.y = targetY;
+        SDL_SetTextureAlphaMod(textTexture, alpha);  // Set transparency
+        SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+
+        // Update the screen
+        SDL_RenderPresent(renderer);
+
+        // Adjust alpha and delay for fade effect
+        alpha -= fadeStep;
+        SDL_Delay(50);  // ~60 FPS
+    }
+
+    SDL_DestroyTexture(textTexture);
+}
+
 int main(int argc, char* args[]) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
@@ -232,11 +501,25 @@ int main(int argc, char* args[]) {
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
-                if (!gameStarted && playerName.length() > 0 && mouseX >= playButton.x && mouseX <= playButton.x + playButton.w &&
-                    mouseY >= playButton.y && mouseY <= playButton.y + playButton.h) {
+                if (mouseX >= playButton.x && mouseX <= playButton.x + playButton.w &&
+    mouseY >= playButton.y && mouseY <= playButton.y + playButton.h) {
                     gameStarted = true;
                     std::cout << "Game Started! Player Name: " << playerName << std::endl;
-                }
+
+                    // Load the back button texture
+                    SDL_Surface* backButtonSurface = IMG_Load("assets/PNG/Button/back.png");
+                    SDL_Texture* backButtonTexture = SDL_CreateTextureFromSurface(renderer, backButtonSurface);
+                    SDL_FreeSurface(backButtonSurface);
+
+                    // Fade-up text effect
+                    fadeUpText(renderer, font, playerName);
+
+                    // Show game selection screen
+                    showGameSelectionScreen(renderer, font, bgTexture, backButtonTexture, muteTexture, unmuteTexture, isMuted);
+    }
+
+
+
                 if (mouseX >= settingsButton.x && mouseX <= settingsButton.x + settingsButton.w &&
                     mouseY >= settingsButton.y && mouseY <= settingsButton.y + settingsButton.h) {
                     std::cout << "Settings Button Clicked!" << std::endl;
