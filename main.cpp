@@ -393,11 +393,16 @@ void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
                     y >= proceedButtonRect.y && y <= proceedButtonRect.y + proceedButtonRect.h) {
                     if (selectedBoyIndex != -1 || selectedGirlIndex != -1) {
                         // Proceed to the next screen or action here
-                        // For example: proceedToNextScreen();
-                        std::cout << "Proceeding with character selection!" << std::endl;
-                        quitGameSelection = true;
+                        // Example: Proceed with the character selection and print the selected character's name
+                        if (selectedBoyIndex != -1) {
+                            std::cout << "Proceeding with " << boyNames[selectedBoyIndex] << " character!" << std::endl;
+                        } else if (selectedGirlIndex != -1) {
+                            std::cout << "Proceeding with " << girlNames[selectedGirlIndex] << " character!" << std::endl;
+                        }
+                        quitGameSelection = true;  // Exit the game selection screen
                     }
-                }
+                    }
+
 
                 // Check if a character is clicked
                 for (int i = 0; i < 3; ++i) {
