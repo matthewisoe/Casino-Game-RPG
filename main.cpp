@@ -171,191 +171,262 @@ void drawThickerBorder(SDL_Renderer* renderer, SDL_Rect rect, int thickness) {
         SDL_RenderDrawRect(renderer, &borderRect);
     }
 }
-
 void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
                              SDL_Texture* bgTexture, SDL_Texture* backButtonTexture,
                              SDL_Texture* muteTexture, SDL_Texture* unmuteTexture, bool& isMuted) {
-    // Load character images
-    SDL_Surface* char1Surface = IMG_Load("assets/PNG/Characters/character1/frame1.png");
-    SDL_Surface* char2Surface = IMG_Load("assets/PNG/Characters/character2/frame2.png");
-    SDL_Surface* char3Surface = IMG_Load("assets/PNG/Characters/character3/frame3.png");
 
-    if (!char1Surface || !char2Surface || !char3Surface) {
-        std::cerr << "Failed to load character images: " << IMG_GetError() << std::endl;
-        return;
+    // Define paths for assets (with correct relative paths)
+    const char* boyPaths[] = {
+        "assets/PNG/Characters/character1/frame1.png",
+        "assets/PNG/Characters/character2/frame2.png",
+        "assets/PNG/Characters/character3/frame3.png"
+    };
+
+    const char* girlPaths[] = {
+        "assets/PNG/Characters/character4/frame1.png",
+        "assets/PNG/Characters/character5/frame1.png",
+        "assets/PNG/Characters/character6/frame1.png"
+    };
+
+    SDL_Surface* boySurfaces[3], * girlSurfaces[3];
+    SDL_Texture* boyTextures[3], * girlTextures[3];
+
+    // Load boy character images
+    for (int i = 0; i < 3; ++i) {
+        boySurfaces[i] = IMG_Load(boyPaths[i]);
+        if (!boySurfaces[i]) {
+            std::cerr << "Failed to load boy character image: " << IMG_GetError() << std::endl;
+            return;
+        }
+        boyTextures[i] = SDL_CreateTextureFromSurface(renderer, boySurfaces[i]);
+        SDL_FreeSurface(boySurfaces[i]);
+        SDL_SetTextureBlendMode(boyTextures[i], SDL_BLENDMODE_BLEND); // Set blend mode for transparency
     }
 
-    SDL_Texture* char1Texture = SDL_CreateTextureFromSurface(renderer, char1Surface);
-    SDL_Texture* char2Texture = SDL_CreateTextureFromSurface(renderer, char2Surface);
-    SDL_Texture* char3Texture = SDL_CreateTextureFromSurface(renderer, char3Surface);
+    // Load girl character images
+    for (int i = 0; i < 3; ++i) {
+        girlSurfaces[i] = IMG_Load(girlPaths[i]);
+        if (!girlSurfaces[i]) {
+            std::cerr << "Failed to load girl character image: " << IMG_GetError() << std::endl;
+            return;
+        }
+        girlTextures[i] = SDL_CreateTextureFromSurface(renderer, girlSurfaces[i]);
+        SDL_FreeSurface(girlSurfaces[i]);
+        SDL_SetTextureBlendMode(girlTextures[i], SDL_BLENDMODE_BLEND); // Set blend mode for transparency
+    }
 
-    SDL_FreeSurface(char1Surface);
-    SDL_FreeSurface(char2Surface);
-    SDL_FreeSurface(char3Surface);
-
-    // Enable blending for transparency
-    SDL_SetTextureBlendMode(char1Texture, SDL_BLENDMODE_BLEND);
-    SDL_SetTextureBlendMode(char2Texture, SDL_BLENDMODE_BLEND);
-    SDL_SetTextureBlendMode(char3Texture, SDL_BLENDMODE_BLEND);
-
-    // Rectangles for character positions
-    SDL_Rect char1Rect = {100, 200, 150, 200};
-    SDL_Rect char2Rect = {325, 200, 150, 200};
-    SDL_Rect char3Rect = {550, 200, 150, 200};
+    // Define rectangles for character positions and buttons
+    SDL_Rect charRects[3] = {
+        {100, 200, 150, 200},
+        {325, 200, 150, 200},
+        {550, 200, 150, 200}
+    };
 
     SDL_Rect backButtonRect = {20, WINDOW_HEIGHT - 70, 50, 50};
     SDL_Rect muteButtonRect = {WINDOW_WIDTH - 60, WINDOW_HEIGHT - 60, 50, 50};
-    SDL_Rect proceedButtonRect = {WINDOW_WIDTH / 2 - 75, WINDOW_HEIGHT - 100, 150, 50}; // Position for Proceed button
+    SDL_Rect proceedButtonRect = {WINDOW_WIDTH / 2 - 75, WINDOW_HEIGHT - 100, 150, 50};  // Define proceed button rect
+
+    // Load boy/girl selection buttons
+    SDL_Surface* boyButtonSurface = IMG_Load("assets/PNG/Button/boy_button.png");
+    SDL_Surface* girlButtonSurface = IMG_Load("assets/PNG/Button/girl_button.png");
+    if (!boyButtonSurface || !girlButtonSurface) {
+        std::cerr << "Failed to load button images: " << IMG_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture* boyButtonTexture = SDL_CreateTextureFromSurface(renderer, boyButtonSurface);
+    SDL_Texture* girlButtonTexture = SDL_CreateTextureFromSurface(renderer, girlButtonSurface);
+    SDL_FreeSurface(boyButtonSurface);
+    SDL_FreeSurface(girlButtonSurface);
+
+    SDL_Rect boyButtonRect = {WINDOW_WIDTH / 2 - 200, 50, 100, 50};
+    SDL_Rect girlButtonRect = {WINDOW_WIDTH / 2 + 100, 50, 100, 50};
 
     // Create the text "Choose your own character"
-    SDL_Color textColor = {0, 0, 0}; // Black color
+    SDL_Color textColor = {0, 0, 0};
     SDL_Surface* titleSurface = TTF_RenderText_Solid(font, "Choose your own character", textColor);
     SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(renderer, titleSurface);
-    int titleWidth = titleSurface->w;
-    int titleHeight = titleSurface->h;
-    SDL_Rect titleRect = {(WINDOW_WIDTH - titleWidth) / 2, 100, titleWidth, titleHeight}; // Centered at the top
+    SDL_Rect titleRect = {(WINDOW_WIDTH - titleSurface->w) / 2, 135, titleSurface->w, titleSurface->h};
     SDL_FreeSurface(titleSurface);
 
-    // Character names
-    const char* char1Name = "Adam";
-    const char* char2Name = "Bernard";
-    const char* char3Name = "Charlie";
+    // Character names for boy and girl characters
+    const char* boyNames[] = {"Adam", "Bernard", "Charlie"};
+    const char* girlNames[] = {"Alice", "Beatrice", "Catherine"};
+
+    SDL_Texture* boyNameTextures[3], * girlNameTextures[3];
+    SDL_Rect nameRects[3];
+
+    // Create text for character names
+    for (int i = 0; i < 3; ++i) {
+        SDL_Surface* boyNameSurface = TTF_RenderText_Solid(font, boyNames[i], textColor);
+        boyNameTextures[i] = SDL_CreateTextureFromSurface(renderer, boyNameSurface);
+        nameRects[i] = {charRects[i].x + (charRects[i].w - boyNameSurface->w) / 2,
+                        charRects[i].y + charRects[i].h + 5,
+                        boyNameSurface->w, boyNameSurface->h};
+        SDL_FreeSurface(boyNameSurface);
+
+        SDL_Surface* girlNameSurface = TTF_RenderText_Solid(font, girlNames[i], textColor);
+        girlNameTextures[i] = SDL_CreateTextureFromSurface(renderer, girlNameSurface);
+        SDL_FreeSurface(girlNameSurface);
+    }
 
     bool quitGameSelection = false;
     SDL_Event event;
     int selectedCharacter = -1; // -1 means no character selected
-
-    // Create the text for character names
-    SDL_Surface* nameSurface1 = TTF_RenderText_Solid(font, char1Name, textColor);
-    SDL_Texture* nameTexture1 = SDL_CreateTextureFromSurface(renderer, nameSurface1);
-    int nameWidth1 = nameSurface1->w;
-    int nameHeight1 = nameSurface1->h;
-    SDL_Rect nameRect1 = {char1Rect.x + (char1Rect.w - nameWidth1) / 2, char1Rect.y + char1Rect.h + 5, nameWidth1, nameHeight1};
-    SDL_FreeSurface(nameSurface1);
-
-    SDL_Surface* nameSurface2 = TTF_RenderText_Solid(font, char2Name, textColor);
-    SDL_Texture* nameTexture2 = SDL_CreateTextureFromSurface(renderer, nameSurface2);
-    int nameWidth2 = nameSurface2->w;
-    int nameHeight2 = nameSurface2->h;
-    SDL_Rect nameRect2 = {char2Rect.x + (char2Rect.w - nameWidth2) / 2, char2Rect.y + char2Rect.h + 5, nameWidth2, nameHeight2};
-    SDL_FreeSurface(nameSurface2);
-
-    SDL_Surface* nameSurface3 = TTF_RenderText_Solid(font, char3Name, textColor);
-    SDL_Texture* nameTexture3 = SDL_CreateTextureFromSurface(renderer, nameSurface3);
-    int nameWidth3 = nameSurface3->w;
-    int nameHeight3 = nameSurface3->h;
-    SDL_Rect nameRect3 = {char3Rect.x + (char3Rect.w - nameWidth3) / 2, char3Rect.y + char3Rect.h + 5, nameWidth3, nameHeight3};
-    SDL_FreeSurface(nameSurface3);
+    bool isBoySelected = true;   // Flag to check if Boy or Girl set is selected
+    int selectedBoyIndex = -1, selectedGirlIndex = -1; // Tracks selected boy or girl character index
 
     while (!quitGameSelection) {
+        SDL_RenderClear(renderer);
+
+        // Set background color to white
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderClear(renderer); // Clears the window to white
+
+        // Render the title text and buttons
+        SDL_RenderCopy(renderer, titleTexture, NULL, &titleRect);
+        SDL_RenderCopy(renderer, boyButtonTexture, NULL, &boyButtonRect);
+        SDL_RenderCopy(renderer, girlButtonTexture, NULL, &girlButtonRect);
+
+        // Render selected character images and names
+        if (isBoySelected) {
+            for (int i = 0; i < 3; ++i) {
+                SDL_RenderCopy(renderer, boyTextures[i], NULL, &charRects[i]);
+
+                // Draw a thicker red border around the selected character
+                if (i == selectedBoyIndex) {
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color
+                    drawThickerBorder(renderer, charRects[i], 5); // 5 is the border thickness
+
+                    // Render the name together with the red border
+                    SDL_RenderCopy(renderer, boyNameTextures[i], NULL, &nameRects[i]);
+                }
+            }
+        } else {
+            for (int i = 0; i < 3; ++i) {
+                SDL_RenderCopy(renderer, girlTextures[i], NULL, &charRects[i]);
+
+                // Draw a thicker red border around the selected character
+                if (i == selectedGirlIndex) {
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red color
+                    drawThickerBorder(renderer, charRects[i], 5); // 5 is the border thickness
+
+                    // Render the name together with the red border
+                    SDL_RenderCopy(renderer, girlNameTextures[i], NULL, &nameRects[i]);
+                }
+            }
+        }
+
+        // Only render the proceed button if a character is selected
+        if (selectedBoyIndex != -1 || selectedGirlIndex != -1) {
+            // Draw a green button
+            SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green color for the button
+            SDL_RenderFillRect(renderer, &proceedButtonRect);  // Draw the button rectangle
+
+            // Create "PROCEED" text with black color
+            SDL_Surface* proceedTextSurface = TTF_RenderText_Solid(font, "PROCEED", {0, 0, 0}); // Black color
+            if (proceedTextSurface != nullptr) {
+                SDL_Texture* proceedTextTexture = SDL_CreateTextureFromSurface(renderer, proceedTextSurface);
+                if (proceedTextTexture != nullptr) {
+                    // Position the text in the center of the button
+                    SDL_Rect textRect = {
+                        proceedButtonRect.x + (proceedButtonRect.w - proceedTextSurface->w) / 2,  // Center the text horizontally
+                        proceedButtonRect.y + (proceedButtonRect.h - proceedTextSurface->h) / 2,  // Center the text vertically
+                        proceedTextSurface->w,  // Width of the text
+                        proceedTextSurface->h   // Height of the text
+                    };
+
+                    // Render the "PROCEED" text
+                    SDL_RenderCopy(renderer, proceedTextTexture, NULL, &textRect);
+
+                    // Clean up the text texture after rendering
+                    SDL_DestroyTexture(proceedTextTexture);
+                }
+                SDL_FreeSurface(proceedTextSurface); // Free the surface after creating the texture
+            }
+        }
+
+        // Render mute/unmute button
+        SDL_Texture* soundTexture = isMuted ? muteTexture : unmuteTexture;
+        SDL_RenderCopy(renderer, soundTexture, NULL, &muteButtonRect);
+
+        // Render back button
+        SDL_RenderCopy(renderer, backButtonTexture, NULL, &backButtonRect);
+
+        SDL_RenderPresent(renderer);
+
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quitGameSelection = true;
-                SDL_Quit();
-                exit(0);
             }
 
             if (event.type == SDL_MOUSEBUTTONDOWN) {
-                int mouseX, mouseY;
-                SDL_GetMouseState(&mouseX, &mouseY);
+                int x, y;
+                SDL_GetMouseState(&x, &y);
 
-                // Check if back button is clicked
-                if (mouseX >= backButtonRect.x && mouseX <= backButtonRect.x + backButtonRect.w &&
-                    mouseY >= backButtonRect.y && mouseY <= backButtonRect.y + backButtonRect.h) {
-                    quitGameSelection = true;  // Back to the previous screen
+                // Check if the boy button is clicked
+                if (x >= boyButtonRect.x && x <= boyButtonRect.x + boyButtonRect.w &&
+                    y >= boyButtonRect.y && y <= boyButtonRect.y + boyButtonRect.h) {
+                    isBoySelected = true; // Select boy character set
                 }
 
-                // Check if mute button is clicked
-                if (mouseX >= muteButtonRect.x && mouseX <= muteButtonRect.x + muteButtonRect.w &&
-                    mouseY >= muteButtonRect.y && mouseY <= muteButtonRect.y + muteButtonRect.h) {
+                // Check if the girl button is clicked
+                if (x >= girlButtonRect.x && x <= girlButtonRect.x + girlButtonRect.w &&
+                    y >= girlButtonRect.y && y <= girlButtonRect.y + girlButtonRect.h) {
+                    isBoySelected = false; // Select girl character set
+                }
+
+                // Check if mute/unmute button is clicked
+                if (x >= muteButtonRect.x && x <= muteButtonRect.x + muteButtonRect.w &&
+                    y >= muteButtonRect.y && y <= muteButtonRect.y + muteButtonRect.h) {
                     isMuted = !isMuted;
-                    if (isMuted) Mix_PauseMusic();
-                    else Mix_ResumeMusic();
                 }
 
-                // Check if proceed button is clicked
-                if (mouseX >= proceedButtonRect.x && mouseX <= proceedButtonRect.x + proceedButtonRect.w &&
-                    mouseY >= proceedButtonRect.y && mouseY <= proceedButtonRect.y + proceedButtonRect.h &&
-                    selectedCharacter != -1) {
-                    // Proceed to the next step (For now, just quit the selection)
+                // Check if the back button is clicked
+                if (x >= backButtonRect.x && x <= backButtonRect.x + backButtonRect.w &&
+                    y >= backButtonRect.y && y <= backButtonRect.y + backButtonRect.h) {
                     quitGameSelection = true;
-                    std::cout << "Character " << (selectedCharacter == 1 ? "Adam" : (selectedCharacter == 2 ? "Bernard" : "Charlie")) << " selected!" << std::endl;
+                }
+
+                // Check if the proceed button is clicked (only when a character is selected)
+                if (x >= proceedButtonRect.x && x <= proceedButtonRect.x + proceedButtonRect.w &&
+                    y >= proceedButtonRect.y && y <= proceedButtonRect.y + proceedButtonRect.h) {
+                    if (selectedBoyIndex != -1 || selectedGirlIndex != -1) {
+                        // Proceed to the next screen or action here
+                        // For example: proceedToNextScreen();
+                        std::cout << "Proceeding with character selection!" << std::endl;
+                        quitGameSelection = true;
+                    }
                 }
 
                 // Check if a character is clicked
-                if (mouseX >= char1Rect.x && mouseX <= char1Rect.x + char1Rect.w &&
-                    mouseY >= char1Rect.y && mouseY <= char1Rect.y + char1Rect.h) {
-                    selectedCharacter = 1;  // Character 1 selected
-                }
-                else if (mouseX >= char2Rect.x && mouseX <= char2Rect.x + char2Rect.w &&
-                         mouseY >= char2Rect.y && mouseY <= char2Rect.y + char2Rect.h) {
-                    selectedCharacter = 2;  // Character 2 selected
-                }
-                else if (mouseX >= char3Rect.x && mouseX <= char3Rect.x + char3Rect.w &&
-                         mouseY >= char3Rect.y && mouseY <= char3Rect.y + char3Rect.h) {
-                    selectedCharacter = 3;  // Character 3 selected
+                for (int i = 0; i < 3; ++i) {
+                    if (x >= charRects[i].x && x <= charRects[i].x + charRects[i].w &&
+                        y >= charRects[i].y && y <= charRects[i].y + charRects[i].h) {
+                        if (isBoySelected) {
+                            selectedBoyIndex = i;
+                            selectedGirlIndex = -1; // Deselect girl characters
+                        } else {
+                            selectedGirlIndex = i;
+                            selectedBoyIndex = -1; // Deselect boy characters
+                        }
+                    }
                 }
             }
         }
-
-        SDL_RenderClear(renderer);
-
-        // Render a white background
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderClear(renderer);
-
-        // Render the title
-        SDL_RenderCopy(renderer, titleTexture, nullptr, &titleRect);
-
-        // Render characters with transparency
-        SDL_RenderCopy(renderer, char1Texture, nullptr, &char1Rect);
-        SDL_RenderCopy(renderer, char2Texture, nullptr, &char2Rect);
-        SDL_RenderCopy(renderer, char3Texture, nullptr, &char3Rect);
-
-        // Highlight the selected character (with a thicker red border)
-        if (selectedCharacter == 1) {
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
-            drawThickerBorder(renderer, char1Rect, 4);  // Thicker border (4px)
-            SDL_RenderCopy(renderer, nameTexture1, nullptr, &nameRect1);  // Show name
-        }
-        if (selectedCharacter == 2) {
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
-            drawThickerBorder(renderer, char2Rect, 4);  // Thicker border (4px)
-            SDL_RenderCopy(renderer, nameTexture2, nullptr, &nameRect2);  // Show name
-        }
-        if (selectedCharacter == 3) {
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
-            drawThickerBorder(renderer, char3Rect, 4);  // Thicker border (4px)
-            SDL_RenderCopy(renderer, nameTexture3, nullptr, &nameRect3);  // Show name
-        }
-
-        // Render the proceed button if a character is selected
-        if (selectedCharacter != -1) {
-            SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green color for proceed button
-            SDL_RenderFillRect(renderer, &proceedButtonRect);
-            // Render text on Proceed button
-            SDL_Surface* proceedSurface = TTF_RenderText_Solid(font, "Proceed", textColor);
-            SDL_Texture* proceedTexture = SDL_CreateTextureFromSurface(renderer, proceedSurface);
-            SDL_FreeSurface(proceedSurface);
-            SDL_RenderCopy(renderer, proceedTexture, nullptr, &proceedButtonRect);
-            SDL_DestroyTexture(proceedTexture);
-        }
-
-        // Render back and mute/unmute buttons
-        SDL_RenderCopy(renderer, backButtonTexture, nullptr, &backButtonRect);
-        SDL_RenderCopy(renderer, isMuted ? muteTexture : unmuteTexture, nullptr, &muteButtonRect);
-
-        SDL_RenderPresent(renderer);
     }
 
-    // Clean up textures
-    SDL_DestroyTexture(char1Texture);
-    SDL_DestroyTexture(char2Texture);
-    SDL_DestroyTexture(char3Texture);
+    // Cleanup textures
+    for (int i = 0; i < 3; ++i) {
+        SDL_DestroyTexture(boyTextures[i]);
+        SDL_DestroyTexture(girlTextures[i]);
+        SDL_DestroyTexture(boyNameTextures[i]);
+        SDL_DestroyTexture(girlNameTextures[i]);
+    }
+
+    SDL_DestroyTexture(boyButtonTexture);
+    SDL_DestroyTexture(girlButtonTexture);
     SDL_DestroyTexture(titleTexture);
-    SDL_DestroyTexture(nameTexture1);
-    SDL_DestroyTexture(nameTexture2);
-    SDL_DestroyTexture(nameTexture3);
 }
 
 void fadeUpText(SDL_Renderer* renderer, TTF_Font* font, const std::string& playerName) {
