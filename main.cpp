@@ -205,6 +205,7 @@ void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
 
     SDL_Rect backButtonRect = {20, WINDOW_HEIGHT - 70, 50, 50};
     SDL_Rect muteButtonRect = {WINDOW_WIDTH - 60, WINDOW_HEIGHT - 60, 50, 50};
+    SDL_Rect proceedButtonRect = {WINDOW_WIDTH / 2 - 75, WINDOW_HEIGHT - 100, 150, 50}; // Position for Proceed button
 
     // Create the text "Choose your own character"
     SDL_Color textColor = {0, 0, 0}; // Black color
@@ -253,6 +254,7 @@ void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
                 SDL_Quit();
                 exit(0);
             }
+
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 int mouseX, mouseY;
                 SDL_GetMouseState(&mouseX, &mouseY);
@@ -269,6 +271,15 @@ void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
                     isMuted = !isMuted;
                     if (isMuted) Mix_PauseMusic();
                     else Mix_ResumeMusic();
+                }
+
+                // Check if proceed button is clicked
+                if (mouseX >= proceedButtonRect.x && mouseX <= proceedButtonRect.x + proceedButtonRect.w &&
+                    mouseY >= proceedButtonRect.y && mouseY <= proceedButtonRect.y + proceedButtonRect.h &&
+                    selectedCharacter != -1) {
+                    // Proceed to the next step (For now, just quit the selection)
+                    quitGameSelection = true;
+                    std::cout << "Character " << (selectedCharacter == 1 ? "Adam" : (selectedCharacter == 2 ? "Bernard" : "Charlie")) << " selected!" << std::endl;
                 }
 
                 // Check if a character is clicked
@@ -305,17 +316,29 @@ void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
         if (selectedCharacter == 1) {
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
             drawThickerBorder(renderer, char1Rect, 4);  // Thicker border (4px)
-            SDL_RenderCopy(renderer, nameTexture1, nullptr, &nameRect1);  // Render "Adam"
+            SDL_RenderCopy(renderer, nameTexture1, nullptr, &nameRect1);  // Show name
         }
-        else if (selectedCharacter == 2) {
+        if (selectedCharacter == 2) {
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
             drawThickerBorder(renderer, char2Rect, 4);  // Thicker border (4px)
-            SDL_RenderCopy(renderer, nameTexture2, nullptr, &nameRect2);  // Render "Bernard"
+            SDL_RenderCopy(renderer, nameTexture2, nullptr, &nameRect2);  // Show name
         }
-        else if (selectedCharacter == 3) {
+        if (selectedCharacter == 3) {
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);  // Red border
             drawThickerBorder(renderer, char3Rect, 4);  // Thicker border (4px)
-            SDL_RenderCopy(renderer, nameTexture3, nullptr, &nameRect3);  // Render "Charlie"
+            SDL_RenderCopy(renderer, nameTexture3, nullptr, &nameRect3);  // Show name
+        }
+
+        // Render the proceed button if a character is selected
+        if (selectedCharacter != -1) {
+            SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green color for proceed button
+            SDL_RenderFillRect(renderer, &proceedButtonRect);
+            // Render text on Proceed button
+            SDL_Surface* proceedSurface = TTF_RenderText_Solid(font, "Proceed", textColor);
+            SDL_Texture* proceedTexture = SDL_CreateTextureFromSurface(renderer, proceedSurface);
+            SDL_FreeSurface(proceedSurface);
+            SDL_RenderCopy(renderer, proceedTexture, nullptr, &proceedButtonRect);
+            SDL_DestroyTexture(proceedTexture);
         }
 
         // Render back and mute/unmute buttons
@@ -325,7 +348,7 @@ void showGameSelectionScreen(SDL_Renderer* renderer, TTF_Font* font,
         SDL_RenderPresent(renderer);
     }
 
-    // Cleanup
+    // Clean up textures
     SDL_DestroyTexture(char1Texture);
     SDL_DestroyTexture(char2Texture);
     SDL_DestroyTexture(char3Texture);
