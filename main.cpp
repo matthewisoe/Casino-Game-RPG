@@ -12,7 +12,59 @@ const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
 std::string currentLanguage = "en"; // Global variable to track current language
+// Localized Terms & Privacy content
+std::unordered_map<std::string, std::string> termsAndPrivacyContent = {
+    {"en",
+     "Terms & Privacy\n\n"
+     "1. Introduction\n"
+     "Welcome to Casino Game! By using this application, you agree to comply with and "
+     "be bound by the following Terms of Service and Privacy Policy. Please read them carefully before using our services.\n\n"
+     "2. Terms of Service\n"
+     "2.1 Use of Application\n"
+     "This application is intended for entertainment purposes only.\n\n"
+     "2.2 User Responsibilities\n"
+     "You are responsible for maintaining the security of your device and account information.\n\n"
+     "2.3 Intellectual Property\n"
+     "All content, features, and functionalities of the application are the intellectual property of Casino Game.\n\n"
+     "2.4 Termination\n"
+     "We reserve the right to suspend or terminate your access at any time.\n\n"
+     "3. Privacy Policy\n"
+     "3.1 Information We Collect\n"
+     "We may collect personal information such as your name and usage data to improve the app functionality.\n\n"
+     "3.2 Sharing of Information\n"
+     "We do not sell your personal information to third parties.\n\n"
+     "4. Data Security\n"
+     "We implement measures to protect your data but cannot guarantee complete security.\n\n"
+     "5. Contact Us\n"
+     "For questions, contact 123040017@link.cuhk..edu.cn\n\n"},
+    {"zh",
+     "条款与隐私\n\n"
+     "1. 介绍\n"
+     "欢迎使用Casino Game！使用此应用程序即表示您同意遵守以下服务条款和隐私政策。请在使用我们的服务之前仔细阅读。\n\n"
+     "2. 服务条款\n"
+     "2.1 应用程序的使用\n"
+     "此应用程序仅供娱乐用途。\n\n"
+     "2.2 用户责任\n"
+     "您有责任维护设备和帐户信息的安全性。\n\n"
+     "2.3 知识产权\n"
+     "应用程序的所有内容、功能和功能均为Casino Game的知识产权。\n\n"
+     "2.4 终止\n"
+     "我们保留随时暂停或终止您访问的权利。\n\n"
+     "3. 隐私政策\n"
+     "3.1 我们收集的信息\n"
+     "我们可能会收集个人信息，例如您的姓名和使用数据，以改进应用功能。\n\n"
+     "3.2 信息共享\n"
+     "我们不会将您的个人信息出售给第三方。\n\n"
+     "4. 数据安全\n"
+     "我们实施了措施来保护您的数据，但无法保证完全的安全性。\n\n"
+     "5. 联系我们\n"
+     "如有问题，请联系 123040017@link.cuhk..edu.cn\n\n"}
+};
 
+// Function to fetch localized Terms & Privacy content
+std::string getLocalizedTermsAndPrivacy() {
+    return termsAndPrivacyContent[currentLanguage];
+}
 std::string getLocalizedText(const std::string& key) {
     static std::unordered_map<std::string, std::unordered_map<std::string, std::string>> languageMap = {
         {"en", {{"settings", "Settings"}, {"language", "Language"}, {"help", "Help"}, {"credits", "Credits"}, {"terms", "Terms & Privacy"}, {"back", "Back"}}},
@@ -36,32 +88,9 @@ void showTermsAndPrivacyWindow(SDL_Renderer* renderer, TTF_Font* font) {
     bool quitTermsWindow = false;
     SDL_Event event;
 
-    // Terms & Privacy text
-    const std::string termsText =
-        "Terms & Privacy\n\n"
-        "1. Introduction\n"
-        "Welcome to Casino Game! By using this application, you agree to comply with and "
-        "be bound by the following Terms of Service and Privacy Policy. Please read them carefully before using our services.\n\n"
-        "2. Terms of Service\n"
-        "2.1 Use of Application\n"
-        "This application is intended for entertainment purposes only.\n\n"
-        "2.2 User Responsibilities\n"
-        "You are responsible for maintaining the security of your device and account information.\n\n"
-        "2.3 Intellectual Property\n"
-        "All content, features, and functionalities of the application are the intellectual property of Casino Game.\n\n"
-        "2.4 Termination\n"
-        "We reserve the right to suspend or terminate your access at any time.\n\n"
-        "3. Privacy Policy\n"
-        "3.1 Information We Collect\n"
-        "We may collect personal information such as your name and usage data to improve the app functionality.\n\n"
-        "3.2 Sharing of Information\n"
-        "We do not sell your personal information to third parties.\n\n"
-        "4. Data Security\n"
-        "We implement measures to protect your data but cannot guarantee complete security.\n\n"
-        "5. Contact Us\n"
-        "For questions, contact support@example.com.\n\n";
+    // Fetch localized Terms & Privacy content
+    const std::string termsText = getLocalizedTermsAndPrivacy();
 
-    // Create a texture for the text
     SDL_Surface* textSurface = TTF_RenderUTF8_Blended_Wrapped(font, termsText.c_str(), blackColor, WINDOW_WIDTH - 40);
     if (!textSurface) {
         std::cerr << "Failed to create text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
@@ -74,7 +103,7 @@ void showTermsAndPrivacyWindow(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_FreeSurface(textSurface);
 
     int scrollOffset = 0;
-    const int scrollSpeed = 10; // Pixels per scroll action
+    const int scrollSpeed = 40;
 
     while (!quitTermsWindow) {
         while (SDL_PollEvent(&event)) {
@@ -84,7 +113,91 @@ void showTermsAndPrivacyWindow(SDL_Renderer* renderer, TTF_Font* font) {
 
             if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    quitTermsWindow = true; // Exit the window on pressing Escape
+                    quitTermsWindow = true;
+                } else if (event.key.keysym.sym == SDLK_UP) {
+                    scrollOffset = std::max(scrollOffset - scrollSpeed, 0);
+                } else if (event.key.keysym.sym == SDLK_DOWN) {
+                    scrollOffset = std::min(scrollOffset + scrollSpeed, textHeight - WINDOW_HEIGHT + 80);
+                }
+            }
+
+            if (event.type == SDL_MOUSEWHEEL) {
+                if (event.wheel.y > 0) {
+                    scrollOffset = std::max(scrollOffset - scrollSpeed, 0);
+                } else if (event.wheel.y < 0) {
+                    scrollOffset = std::min(scrollOffset + scrollSpeed, textHeight - WINDOW_HEIGHT + 80);
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderClear(renderer);
+
+        SDL_Rect textViewport = {0, scrollOffset, textWidth, WINDOW_HEIGHT - 80};
+        SDL_Rect renderRect = {20, 20, WINDOW_WIDTH - 40, WINDOW_HEIGHT - 80};
+        SDL_RenderCopy(renderer, textTexture, &textViewport, &renderRect);
+
+        SDL_RenderPresent(renderer);
+    }
+
+    SDL_DestroyTexture(textTexture);
+}
+void showCreditsWindow(SDL_Renderer* renderer, TTF_Font* font) {
+    SDL_Color blackColor = {0, 0, 0};
+    bool quitCreditsWindow = false;
+    SDL_Event event;
+
+    // Credits text
+    const std::string creditsText =
+        "Credits\n\n"
+        "1. Development Team\n"
+        "Matthew Irving Soenarjo\n"
+        "Darren Clay Liem\n"
+        "Ramses Piramus\n"
+        "Goh Ean Jie\n"
+        "Chi Cong Yu\n\n"
+        "2. Libraries and Frameworks\n"
+        "SDL2: Simple DirectMedia Layer for graphics and input handling (https://www.libsdl.org)\n"
+        "SDL_ttf: For font rendering (https://www.libsdl.org/projects/SDL_ttf/)\n"
+        "SDL_mixer: For audio support (https://www.libsdl.org/projects/SDL_mixer/)\n"
+        "SDL_image: For loading images (https://www.libsdl.org/projects/SDL_image/)\n\n"
+        "3. Fonts\n"
+        "Noto Sans SC: Simplified Chinese font by Google (https://www.google.com/get/noto)\n\n"
+        "4. Assets\n"
+        "Background Images: [Source or Attribution, e.g., freepik.com, etc.]\n"
+        "Sound Effects: [Source or Attribution, e.g., freesound.org, etc.]\n"
+        "Icons: [Source or Attribution, e.g., flaticon.com, etc.]\n\n"
+        "5. Special Thanks\n"
+        "To all contributors who helped during testing and feedback.\n"
+        "To the open-source community for their invaluable tools and resources.\n\n"
+        "6. Contact Us\n"
+        "For inquiries or issues, please contact:\n"
+        "Email: 123040017@link.cuhk.edu.cn\n";
+
+    // Create texture for credits text
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended_Wrapped(font, creditsText.c_str(), blackColor, WINDOW_WIDTH - 40);
+    if (!textSurface) {
+        std::cerr << "Failed to create text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    int textWidth = textSurface->w;
+    int textHeight = textSurface->h;
+    SDL_FreeSurface(textSurface);
+
+    int scrollOffset = 0;
+    const int scrollSpeed = 40; // Pixels per scroll action
+
+    while (!quitCreditsWindow) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                quitCreditsWindow = true;
+            }
+
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    quitCreditsWindow = true; // Exit on Escape key
                 } else if (event.key.keysym.sym == SDLK_UP) {
                     scrollOffset = std::max(scrollOffset - scrollSpeed, 0); // Scroll up
                 } else if (event.key.keysym.sym == SDLK_DOWN) {
@@ -101,14 +214,111 @@ void showTermsAndPrivacyWindow(SDL_Renderer* renderer, TTF_Font* font) {
             }
         }
 
+        // Clear screen
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
 
-        // Render text
+        // Render credits text
         SDL_Rect textViewport = {0, scrollOffset, textWidth, WINDOW_HEIGHT - 80};
         SDL_Rect renderRect = {20, 20, WINDOW_WIDTH - 40, WINDOW_HEIGHT - 80};
         SDL_RenderCopy(renderer, textTexture, &textViewport, &renderRect);
 
+        // Update screen
+        SDL_RenderPresent(renderer);
+    }
+
+    // Cleanup
+    SDL_DestroyTexture(textTexture);
+}
+void showHelpWindow(SDL_Renderer* renderer, TTF_Font* font) {
+    SDL_Color blackColor = {0, 0, 0};
+    bool quitHelpWindow = false;
+    SDL_Event event;
+
+    // Help text
+    const std::string helpText =
+        "Help\n\n"
+        "1. Overview\n"
+        "Welcome to the Casino Game! This is a simple, fun, and interactive application designed for entertainment purposes. Use this Help guide to understand how to navigate and play the game.\n\n"
+        "2. Main Menu\n\n"
+        "Play: Start the game and explore different casino games.\n"
+        "Settings: Adjust preferences such as language and sound.\n"
+        "About: Learn more about the developers and the technologies behind the game.\n"
+        "Exit: Quit the application.\n\n"
+        "3. Game Controls\n\n"
+        "Mouse:\n"
+        "Left-click to interact with buttons, cards, or other in-game elements.\n\n"
+        "Keyboard:\n"
+        "Use the arrow keys or mouse wheel to scroll through text or options.\n"
+        "Press Esc to return to the previous menu or exit the current screen.\n\n"
+        "4. Settings Menu\n\n"
+        "Change Language: Switch between available languages (English, Chinese).\n"
+        "Adjust Volume: Mute or unmute background music and sound effects.\n\n"
+        "5. Tips for Playing\n\n"
+        "Read the rules of each game carefully before starting.\n"
+        "Practice makes perfect—use practice rounds to improve your skills.\n"
+        "Have fun and play responsibly!\n\n"
+        "6. Common Issues\n\n"
+        "Screen Freezing:\n"
+        "Restart the game or check for updates to SDL-related libraries.\n\n"
+        "No Sound:\n"
+        "Ensure your device audio is enabled and adjust volume settings in the game.\n\n"
+        "Language Not Changing:\n"
+        "Verify the settings and restart the application if necessary.\n\n"
+        "7. Contact Us\n\n"
+        "If you have any issues, suggestions, or feedback, feel free to contact us:\n"
+        "Email: 123040017@link.cuhk.edu.cn\n";
+
+    // Create texture for help text
+    SDL_Surface* textSurface = TTF_RenderUTF8_Blended_Wrapped(font, helpText.c_str(), blackColor, WINDOW_WIDTH - 40);
+    if (!textSurface) {
+        std::cerr << "Failed to create text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    int textWidth = textSurface->w;
+    int textHeight = textSurface->h;
+    SDL_FreeSurface(textSurface);
+
+    int scrollOffset = 0;
+    const int scrollSpeed = 40; // Pixels per scroll action
+
+    while (!quitHelpWindow) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                quitHelpWindow = true;
+            }
+
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    quitHelpWindow = true; // Exit on Escape key
+                } else if (event.key.keysym.sym == SDLK_UP) {
+                    scrollOffset = std::max(scrollOffset - scrollSpeed, 0); // Scroll up
+                } else if (event.key.keysym.sym == SDLK_DOWN) {
+                    scrollOffset = std::min(scrollOffset + scrollSpeed, textHeight - WINDOW_HEIGHT + 80); // Scroll down
+                }
+            }
+
+            if (event.type == SDL_MOUSEWHEEL) {
+                if (event.wheel.y > 0) {
+                    scrollOffset = std::max(scrollOffset - scrollSpeed, 0); // Scroll up
+                } else if (event.wheel.y < 0) {
+                    scrollOffset = std::min(scrollOffset + scrollSpeed, textHeight - WINDOW_HEIGHT + 80); // Scroll down
+                }
+            }
+        }
+
+        // Clear screen
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderClear(renderer);
+
+        // Render help text
+        SDL_Rect textViewport = {0, scrollOffset, textWidth, WINDOW_HEIGHT - 80};
+        SDL_Rect renderRect = {20, 20, WINDOW_WIDTH - 40, WINDOW_HEIGHT - 80};
+        SDL_RenderCopy(renderer, textTexture, &textViewport, &renderRect);
+
+        // Update screen
         SDL_RenderPresent(renderer);
     }
 
@@ -440,6 +650,15 @@ void showSettingsWindow(SDL_Renderer* renderer, TTF_Font* font, SDL_Texture* bac
                     mouseY >= termsButton.y && mouseY <= termsButton.y + termsButton.h) {
                     showTermsAndPrivacyWindow(renderer, font);
                 }
+                if (mouseX >= creditsButton.x && mouseX <= creditsButton.x + creditsButton.w &&
+    mouseY >= creditsButton.y && mouseY <= creditsButton.y + creditsButton.h) {
+                    showCreditsWindow(renderer, font);
+    }
+                if (mouseX >= helpButton.x && mouseX <= helpButton.x + helpButton.w &&
+                    mouseY >= helpButton.y && mouseY <= helpButton.y + helpButton.h) {
+                    showHelpWindow(renderer, font);
+                    }
+
             }
         }
 
